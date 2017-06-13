@@ -103,7 +103,6 @@ class Snake_AI(pg.sprite.Sprite):
         self.pos += self.vit + 0.5 * self.acc
         self.rect.center = self.pos
 
-        #self.collide_with_wall()
         self.collide_with_player_body()
 
 
@@ -126,10 +125,6 @@ class Snake_AI(pg.sprite.Sprite):
             self.game.player.snake_longueur += self.snake_longueur_AI
             random.choice(self.game.kill_ai_sound).play()
 
-    def collide_with_wall(self):
-        hits = pg.sprite.spritecollide(self, self.game.walls, False)
-        if len(hits) > 1:
-            self.kill()
 
 class Body_player(pg.sprite.Sprite):
     def __init__(self, game , pos, snake_Longueur, rot):
@@ -225,8 +220,6 @@ class Candy(pg.sprite.Sprite):
     def collide_AI_with_candy(self):
         hitss = pg.sprite.groupcollide(self.game.snakeAIs, self.game.candies, False, True)
         for hit in hitss:
-            if hitss[hit] == self.game.player:
-                print(11)
             hit.snake_longueur_AI +=1
             indice = self.recherche_indice_candylist(hit.pos.x, hit.pos.y)
             if indice != None :
