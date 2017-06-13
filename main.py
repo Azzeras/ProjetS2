@@ -91,7 +91,6 @@ class Game():
     def new(self):
         # START A NEW GAME
         self.all_sprites = pg.sprite.Group()
-        self.walls = pg.sprite.Group()
         self.candies = pg.sprite.Group()
         self.bodies = pg.sprite.Group()
         self.snakeAIs = pg.sprite.Group()
@@ -148,17 +147,10 @@ class Game():
             Snake_AI(self,self.rand_AI_x, self.rand_AI_y)
 
 
-    def draw_grille(self):
-        for x in range(0, WIDTH, TAILLE_SERPENT):
-            pg.draw.line(self.screen, LIGHTGREY, (x, 0), (x, HEIGHT))
-        for y in range(0, WIDTH, TAILLE_SERPENT):
-            pg.draw.line(self.screen, LIGHTGREY, (0, y), (WIDTH, y))
-
     def draw(self):
         # GAMELOOP -- DRAW
         pg.display.set_caption("{:0.2f}".format(self.clock.get_fps()))
         self.screen.fill(BROWN)
-
         for sprite in self.all_sprites:
             self.screen.blit(sprite.image, self.camera.apply(sprite))
         pg.display.flip()
