@@ -60,11 +60,13 @@ class Player(pg.sprite.Sprite):
     def collide_with_player_head(self):
         hits = pg.sprite.spritecollide(self.game.player, self.game.bodies_ai, False)
         if hits :
-            print(4)
+            pg.mixer.pause()
+            pg.mixer.music.pause()
             sound = random.choice(self.game.game_over_sound)
             sound.set_volume(1)
             sound.play()
             self.kill()
+            self.game.show_end_screen()
 
 
 class Snake_AI(pg.sprite.Sprite):
