@@ -21,10 +21,40 @@ class Game():
         self.last_time_serpent = time()
         self.candy_List =[]
 
+    def draw_text(self, text, font_name, size, color, x, y, align="Nord_Ouest"):
+        f = open(font_name,'r')
+        font = pg.font.Font(font_name,size)
+        text_surface = font.render(text, True, color)
+        text_rect = text_surface.get_rect()
+        if align == "Nord_Ouest":
+            text_rect.topleft = (x, y)
+        if align == "Nord_Est":
+            text_rect.topright = (x, y)
+        if align == "Suc_Ouest":
+            text_rect.bottomleft = (x, y)
+        if align == "Sud_Est":
+            text_rect.bottomright = (x, y)
+        if align == "Nord":
+            text_rect.midtop = (x, y)
+        if align == "Sud":
+            text_rect.midbottom = (x, y)
+        if align == "Est":
+            text_rect.midright = (x, y)
+        if align == "Ouest":
+            text_rect.midleft = (x, y)
+        if align == "Middle":
+            text_rect.center = (x, y)
+        self.screen.blit(text_surface, text_rect)
+
     def load_data(self):
         game_folder = path.dirname(__file__)
         img_folder = path.join(game_folder, 'Images')
         self.sound_folder = path.join(game_folder, 'Sounds')
+
+        self.font = path.join(img_folder, 'Jurassic_Park.TTF')
+
+        self.color_paused = pg.Surface(self.screen.get_size()).convert_alpha()
+        self.color_paused.fill((0,0,0,140))
 
         self.serpent_img = pg.image.load(path.join(img_folder, SERPENT_IMG)).convert_alpha()
         self.serpent_img = pg.transform.scale(self.serpent_img, (TAILLE_SERPENT,TAILLE_SERPENT))
@@ -88,7 +118,9 @@ class Game():
         self.game_over_sound=[]
         for sound in GAME_OVER_SOUND:
             self.game_over_sound.append(pg.mixer.Sound(path.join(self.sound_folder, sound)))
+
     def new(self):
+
         # START A NEW GAME
         self.all_sprites = pg.sprite.Group()
         self.candies = pg.sprite.Group()
@@ -99,21 +131,24 @@ class Game():
         self.player = Player(self, WIDTH//2, HEIGHT//2)
         self.all_sprites.add(self.player)
         self.camera = Camera(WIDTH, HEIGHT)
-        pg.mixer.music.load(path.join(self.sound_folder,CODE_MUSIC))
-        pg.mixer.music.set_volume(0.03)
+        self.pause = False
 
+        pg.mixer.music.load(path.join(self.sound_folder, CODE_MUSIC))
+        pg.mixer.music.set_volume(0.3)
 
 
         self.run()
 
     def run(self):
         # GAMELOOP
+
         self.playing=True
         pg.mixer.music.play(loops=-1)
         while self.playing:
             self.clock.tick(FPS)
             self.events()
-            self.update()
+            if not self.pause:
+                self.update()
             self.draw()
 
     def update(self):
@@ -130,17 +165,20 @@ class Game():
                 if self.playing:
                     self.playing=False
                 self.running = False
+            if event.type == pg.KEYDOWN:
+                if event.key == pg.K_ESCAPE:
+                    self.pause = not self.pause
 
         self.candy_tmp = []
         self.candyList_Compteur=-1
-        if time() - self.last_time_candy > COOLDOWN_SPAWN_BONBON:
+        if time() - self.last_time_candy > COOLDOWN_SPAWN_BONBON and not self.pause:
             self.rand_bonbon_X_Time = random.randrange(int(self.player.pos.x) - int(WIDTH/2),int(self.player.pos.x )+ int(WIDTH/2))
             self.rand_bonbon_Y_Time = random.randrange(int(self.player.pos.y) - int(HEIGHT/2),int(self.player.pos.y )+ int(HEIGHT/2))
             self.last_time_candy = time()
             self.candy_List.append((self.rand_bonbon_X_Time, self.rand_bonbon_Y_Time))
             Candy(self, self.rand_bonbon_X_Time, self.rand_bonbon_Y_Time)
 
-        if time() - self.last_time_serpent > COOLDOWN_SPAWN_AI:
+        if time() - self.last_time_serpent > COOLDOWN_SPAWN_AI and not self.pause:
             self.rand_AI_x = random.randrange(int(self.player.pos.x) - int(WIDTH/2),int(self.player.pos.x )+ int(WIDTH/2))
             self.rand_AI_y = random.randrange(int(self.player.pos.y) - int(HEIGHT/2),int(self.player.pos.y )+ int(HEIGHT/2))
             self.last_time_serpent = time()
@@ -153,11 +191,18 @@ class Game():
         self.screen.fill(BROWN)
         for sprite in self.all_sprites:
             self.screen.blit(sprite.image, self.camera.apply(sprite))
+        score = "Score "+str(self.player.snake_longueur)
+
+        self.draw_text(score, self.font, 40, BLACK ,10,10, align="Nord_Ouest")
+        if self.pause :
+            self.screen.blit(self.color_paused, (0,0))
+            self.draw_text("Game Paused", self.font, 105, RED, WIDTH/2, WIDTH/20, align="Middle")
         pg.display.flip()
 
     def show_start_screen(self):
         # AFFICHE ECRAN DE DEBUT
         pass
+
 
     def show_end_screen(self):
         # AFFICHE ECRAN DE FIN
