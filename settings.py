@@ -2,9 +2,9 @@
 import pygame as pg
 pg.init()
 c= pg.display.Info()
-print(c)
+
 WIDTH = int(c.current_w)-100
-HEIGHT = int(c.current_h)-90
+HEIGHT = int(c.current_h)-100
 FPS = 60
 TAILLE_SERPENT=20
 TITLE = 'ok'
@@ -60,7 +60,7 @@ GUILE_THEME = 'Guile_Theme.wav'
 CODE_MUSIC = 'CODE_AVEC_LE_CUL.wav'
 EAT_CANDY_SOUND = ['Wololo.wav','Zbeub.wav','Chewbacca.wav','Bruh.wav','AH.wav','BarrelRoll.wav','Cest_Pas_Faux.wav','Eddy_Malou.wav','Nope.wav','Shoryuken.wav','Skype.wav','Trap.wav','Tuturu.wav','Yasuo.wav']
 
-GAME_OVER_SOUND = ['Noooo.wav','Motus_Boule_Noir.wav','Chosen_one.wav','Illidan.wav','Jack.wav','No_God_Plz.wav','Really_Nigga.wav','Sad_Violon.wav']
+GAME_OVER_SOUND = ['Noooo.wav','Motus_Boule_Noir.wav','Illidan.wav','Jack.wav','No_God_Plz.wav','Really_Nigga.wav','Sad_Violon.wav']
 
 KILL_AI_SNAKE_SOUND = ['MLG.wav','Headshot.wav','Combo_Breaker.wav','Demacia.wav','Il_Est_Fort.wav','Julien_Lepers.wav','Leroyyyyyyyy.wav','Quickshot.wav','Pentakill.wav']
 
