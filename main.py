@@ -1,6 +1,6 @@
 import pygame as pg
 import random
-from os import path, getcwd, environ
+from os import path, environ
 from settings import *
 from sprites import *
 from tilemap import *
@@ -51,10 +51,28 @@ class Game():
         img_folder = path.join(game_folder, 'Images')
         self.sound_folder = path.join(game_folder, 'Sounds')
 
-        self.font = path.join(img_folder, 'Jurassic_Park.TTF')
+        self.fontJP = path.join(img_folder, 'Jurassic_Park.TTF')
 
         self.color_paused = pg.Surface(self.screen.get_size()).convert_alpha()
         self.color_paused.fill((0,0,0,140))
+
+        self.fleche_up = pg.image.load(path.join(img_folder, FLECHE_UP)).convert_alpha()
+        self.fleche_up = pg.transform.scale(self.fleche_up , (TAILLE_ECRIT_NORMAL,TAILLE_ECRIT_NORMAL))
+
+        self.fleche_gauche = pg.image.load(path.join(img_folder, FLECHE_GAUCHE)).convert_alpha()
+        self.fleche_gauche = pg.transform.scale(self.fleche_gauche , (TAILLE_ECRIT_NORMAL,TAILLE_ECRIT_NORMAL))
+
+        self.fleche_droite = pg.image.load(path.join(img_folder, FLECHE_DROITE)).convert_alpha()
+        self.fleche_droite = pg.transform.scale(self.fleche_droite , (TAILLE_ECRIT_NORMAL,TAILLE_ECRIT_NORMAL))
+
+        self.fleche_up_paused = pg.image.load(path.join(img_folder, FLECHE_UP_PAUSED)).convert_alpha()
+        self.fleche_up_paused = pg.transform.scale(self.fleche_up_paused , (TAILLE_ECRIT_NORMAL,TAILLE_ECRIT_NORMAL))
+
+        self.fleche_gauche_paused = pg.image.load(path.join(img_folder, FLECHE_GAUCHE_PAUSED)).convert_alpha()
+        self.fleche_gauche_paused = pg.transform.scale(self.fleche_gauche_paused , (TAILLE_ECRIT_NORMAL,TAILLE_ECRIT_NORMAL))
+
+        self.fleche_droite_paused = pg.image.load(path.join(img_folder, FLECHE_DROITE_PAUSED)).convert_alpha()
+        self.fleche_droite_paused = pg.transform.scale(self.fleche_droite_paused , (TAILLE_ECRIT_NORMAL,TAILLE_ECRIT_NORMAL))
 
         self.serpent_img = pg.image.load(path.join(img_folder, SERPENT_IMG)).convert_alpha()
         self.serpent_img = pg.transform.scale(self.serpent_img, (TAILLE_SERPENT,TAILLE_SERPENT))
@@ -132,9 +150,13 @@ class Game():
         self.all_sprites.add(self.player)
         self.camera = Camera(WIDTH, HEIGHT)
         self.pause = False
+        self.option_pause = False
+        self.raccpause = False
+        self.musique_fond = True
+        self.sond_ambiant= True
 
         pg.mixer.music.load(path.join(self.sound_folder, CODE_MUSIC))
-        pg.mixer.music.set_volume(0.3)
+        pg.mixer.music.set_volume(0.03)
 
 
         self.run()
@@ -143,7 +165,9 @@ class Game():
         # GAMELOOP
 
         self.playing=True
-        pg.mixer.music.play(loops=-1)
+        self.start_screen()
+        if self.musique_fond:
+            pg.mixer.music.play(loops=-1)
         while self.playing:
             self.clock.tick(FPS)
             self.events()
@@ -191,29 +215,185 @@ class Game():
         self.screen.fill(BROWN)
         for sprite in self.all_sprites:
             self.screen.blit(sprite.image, self.camera.apply(sprite))
-        score = "Score "+str(self.player.snake_longueur)
+        score = "Score "
+        score2=':'+str(self.player.snake_longueur)
+        self.draw_text(score, self.fontJP, 40, BLACK ,10,10, align="Nord_Ouest")
+        self.draw_text(score2, self.fontJP, 40, BLACK ,70,10, align="Nord_Ouest")
 
-        self.draw_text(score, self.font, 40, BLACK ,10,10, align="Nord_Ouest")
         if self.pause :
-            self.screen.blit(self.color_paused, (0,0))
-            self.draw_text("Game Paused", self.font, 105, RED, WIDTH/2, WIDTH/20, align="Middle")
+            if self.option_pause:
+                self.option_screen(True)
+            elif self.raccpause :
+                self.raccourcis_screen(True)
+            self.pause_screen()
         pg.display.flip()
 
-    def show_start_screen(self):
+    def pause_screen(self):
+        self.screen.blit(self.color_paused, (0, 0))
+        self.draw_text("Game Paused", self.fontJP, 105, RED, WIDTH / 2, WIDTH / 20, align="Middle")
+        self.draw_text("Sliter IO ",self.fontJP, TAILLE_ECRIT_GRAND, WHITE, WIDTH/2, HEIGHT/4, align="Middle")
+        self.draw_text("Press   O   for   Options",self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+55, HEIGHT/2, align="Middle")
+        self.draw_text("Press  R  pour  acceder  aux  Raccourcis", self.fontJP,TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+200, HEIGHT/2+100, align="Middle")
+        self.draw_text("Press  ENTREE  pour  REcommencer  une  partie",self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+310, HEIGHT/2+200, align="Middle")
+        self.keys_pause_screen()
+
+    def keys_pause_screen(self):
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                self.playing = False
+                self.running = False
+
+            if event.type == pg.KEYDOWN:
+                if event.key == pg.K_o:
+                    self.option_pause = True
+                elif event.key == pg.K_r:
+                    self.raccpause = True
+                elif event.key == pg.K_ESCAPE:
+                    self.pause = not self.pause
+
+
+    def start_screen(self):
         # AFFICHE ECRAN DE DEBUT
+        self.screen.fill(BGCOLOR)
+        self.draw_text("Sliter IO ",self.fontJP, TAILLE_ECRIT_GRAND, WHITE, WIDTH/2, HEIGHT/4, align="Middle")
+        self.draw_text("Press   O   for   Options",self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+55, HEIGHT/2, align="Middle")
+        self.draw_text("Press   I   for   l Introduction",self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+119, HEIGHT/2+100, align="Middle")
+        self.draw_text("Press  R  pour  acceder  aux  Raccourcis", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+200 ,HEIGHT / 2 + 200, align="Middle")
+        self.draw_text("Press  ESPACE  pour  commencer  la  partie",self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+TAILLE_ECRIT_GRAND, HEIGHT/2+300, align="Middle")
+        pg.display.flip()
+        self.waiting_start_screens()
+
+    def waiting_start_screens(self):
+        waiting = True
+        while waiting:
+            self.clock.tick(FPS)
+            for event in pg.event.get():
+                if event.type == pg.QUIT:
+                    waiting = False
+                    self.playing = False
+                    self.running = False
+                if event.type == pg.KEYDOWN:
+                    if event.key == pg.K_ESCAPE:
+                        self.running = False
+                        waiting = False
+                        self.playing = False
+                    elif event.key == pg.K_SPACE:
+                        waiting = False
+                    elif event.key == pg.K_o:
+                        self.option_screen(False)
+                    elif event.key == pg.K_i:
+                        self.intro_screen()
+                    elif event.key == pg.K_r:
+                        self.raccourcis_screen(False)
+
+    def option_screen(self, viapause):
+        if viapause :
+            self.screen.blit(self.color_paused, (0, 0))
+            self.draw_text("Game Paused", self.fontJP, 105, RED, WIDTH / 2, WIDTH / 20, align="Middle")
+        else :
+            self.screen.fill(BGCOLOR)
+        self.draw_text("Sliter IO ",self.fontJP, TAILLE_ECRIT_GRAND, WHITE, WIDTH/2, HEIGHT/4, align="Middle")
+        self.draw_text("Press  M  pour  activer  desactiver   la   musique  de  fond ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+325, HEIGHT/2, align="Middle")
+        self.draw_text("Press  S  pour  activer  desactiver   les   sonds  ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+200, HEIGHT /2+100, align="Middle")
+        self.draw_text("Press  Echap pour revenir en arriere ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+115,HEIGHT / 2 + 200, align="Middle")
+        pg.display.flip()
+        self.waiting_option_screens()
+        if viapause:
+            self.option_pause = False
+        else:
+            self.start_screen()
+
+
+    def waiting_option_screens(self, ):
+        waiting = True
+        while waiting:
+            self.clock.tick(FPS)
+            for event in pg.event.get():
+                print(self.musique_fond, self.sond_ambiant)
+                if event.type == pg.QUIT:
+                    waiting = False
+                if event.type == pg.KEYDOWN:
+                    if event.key == pg.K_ESCAPE and not self.option_pause:
+                        waiting = False
+                    elif event.key == pg.K_ESCAPE and  self.option_pause:
+                        self.option_pause = not self.option_pause
+                        waiting = False
+                    elif event.key == pg.K_SEMICOLON:
+                        self.musique_fond = not self.musique_fond
+                    elif event.key == pg.K_SEMICOLON and self.option_pause:
+                        pg.mixer.music.stop()
+                        self.musique_fond = not self.musique_fond
+                    elif event.key == pg.K_s:
+                        self.sond_ambiant = not self.sond_ambiant
+
+    def raccourcis_screen(self, viapause):
+        if viapause :
+            self.screen.blit(self.color_paused, (0, 0))
+            self.draw_text("Game Paused", self.fontJP, 105, RED, WIDTH / 2, WIDTH / 20, align="Middle")
+
+            self.image1 = self.fleche_up_paused
+            self.screen.blit(self.image1, (WIDTH / 4 - 65, HEIGHT / 2 - 75))
+
+            self.image2 = self.fleche_gauche_paused
+            self.screen.blit(self.image2, (WIDTH / 4 - 65, HEIGHT / 2 + 35))
+
+            self.image3 = self.fleche_droite_paused
+            self.screen.blit(self.image3, (WIDTH / 4 - 65, HEIGHT / 2 + 135))
+
+        else :
+            self.screen.fill(BGCOLOR)
+
+            self.image1 = self.fleche_up
+            self.screen.blit(self.image1, (WIDTH / 4 - 65, HEIGHT / 2 - 75))
+
+            self.image2 = self.fleche_gauche
+            self.screen.blit(self.image2, (WIDTH / 4 - 65, HEIGHT / 2 + 35))
+
+            self.image3 = self.fleche_droite
+            self.screen.blit(self.image3, (WIDTH / 4 - 65, HEIGHT / 2 + 135))
+
+        self.draw_text("Sliter IO ",self.fontJP, TAILLE_ECRIT_GRAND, WHITE, WIDTH/2, HEIGHT/4, align="Middle")
+
+        self.draw_text("Z ou", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4-125, HEIGHT/2, align="Middle")
+        self.draw_text("pour avancer", self.fontJP,TAILLE_ECRIT_NORMAL, WHITE, WIDTH/3+35, HEIGHT/2, align="Middle")
+
+        self.draw_text("Q ou", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4-125, HEIGHT/2+100, align="Middle")
+        self.draw_text("pour tourner vers la gauche ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/3+200, HEIGHT/2+100, align="Middle")
+
+        self.draw_text("D ou", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4-125, HEIGHT/2+200, align="Middle")
+        self.draw_text("pour tourner vers la droite", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/3+195, HEIGHT/2+200, align="Middle")
+
+        pg.display.flip()
+        self.waiting_racc_screens()
+        if viapause:
+            self.raccpause  = False
+        else:
+            self.start_screen()
+
+    def waiting_racc_screens(self,):
+        waiting = True
+        while waiting:
+            self.clock.tick(FPS)
+            for event in pg.event.get():
+                if event.type == pg.QUIT:
+                    waiting = False
+                if event.type == pg.KEYDOWN:
+                    if event.key == pg.K_ESCAPE and not self.raccpause :
+                        waiting = False
+                    elif event.key == pg.K_ESCAPE and  self.raccpause :
+                        self.raccpause = not self.raccpause
+                        waiting = False
+
+    def intro_screen(self):
         pass
 
-
-    def show_end_screen(self):
+    def end_screen(self):
         # AFFICHE ECRAN DE FIN
         pass
 
-
-
 g = Game()
-g.show_start_screen()
 while g.running:
     g.new()
-    g.show_end_screen()
+    g.end_screen()
 
 pg.quit()
