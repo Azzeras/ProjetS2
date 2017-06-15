@@ -55,18 +55,19 @@ class Player(pg.sprite.Sprite):
         if len(self.snakeList) > self.snake_longueur:
             del self.snakeList[0]
 
-        self.collide_with_player_head()
+        self.collide_with_AI_head()
 
-    def collide_with_player_head(self):
+    def collide_with_AI_head(self):
         hits = pg.sprite.spritecollide(self.game.player, self.game.bodies_ai, False)
         if hits :
-            pg.mixer.music.pause()
-            pg.mixer.pause()
-            sound = random.choice(self.game.game_over_sound)
-            sound.set_volume(1)
-            sound.play()
+            if self.game.sond_ambiant:
+                pg.mixer.music.pause()
+                pg.mixer.pause()
+                sound = random.choice(self.game.game_over_sound)
+                sound.set_volume(1)
+                sound.play()
             self.kill()
-            self.game.show_end_screen()
+            self.game.end_screen()
 
 
 class Snake_AI(pg.sprite.Sprite):
@@ -125,7 +126,10 @@ class Snake_AI(pg.sprite.Sprite):
         for hit in hitss:
             hit.snake_longueur += self.snake_longueur_AI
             self.game.player.snake_longueur += self.snake_longueur_AI
-            random.choice(self.game.kill_ai_sound).play()
+            if self.game.sond_ambiant:
+                sound = random.choice(self.game.kill_ai_sound)
+                sound.set_volume(0.5)
+                sound.play()
 
 
 class Body_player(pg.sprite.Sprite):
@@ -210,9 +214,10 @@ class Candy(pg.sprite.Sprite):
     def collide_player_with_candy(self):
         hits = pg.sprite.collide_rect(self.game.player,self)
         if hits :
-            sound=random.choice(self.game.eat_candy_sound)
-            sound.set_volume(.5)
-            sound.play()
+            if self.game.sond_ambiant:
+                sound=random.choice(self.game.eat_candy_sound)
+                sound.set_volume(.4)
+                sound.play()
             self.game.player.snake_longueur += 1
             indice = self.recherche_indice_candylist(self.pos.x, self.pos.y,)
             if indice != None:
