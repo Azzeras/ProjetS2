@@ -3,6 +3,7 @@ from settings import *
 import math
 import random
 vecteur=pg.math.Vector2
+from time import *
 
 class Player(pg.sprite.Sprite):
     def __init__(self, game, x, y):
@@ -67,7 +68,8 @@ class Player(pg.sprite.Sprite):
                 sound.set_volume(1)
                 sound.play()
             self.kill()
-            self.game.end_screen()
+
+            self.game.end = not self.game.end
 
 
 class Snake_AI(pg.sprite.Sprite):
@@ -126,6 +128,7 @@ class Snake_AI(pg.sprite.Sprite):
         for hit in hitss:
             hit.snake_longueur += self.snake_longueur_AI
             self.game.player.snake_longueur += self.snake_longueur_AI
+            self.game.nb_ai_kill+=1
             if self.game.sond_ambiant:
                 sound = random.choice(self.game.kill_ai_sound)
                 sound.set_volume(0.5)
