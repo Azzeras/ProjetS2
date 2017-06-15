@@ -52,7 +52,10 @@ class Game():
         self.fontJP = path.join(img_folder, 'Jurassic_Park.TTF')
         self.fontCelte = path.join(img_folder, 'SEVESBRG.TTF')
         self.color_paused = pg.Surface(self.screen.get_size()).convert_alpha()
-        self.color_paused.fill((0,0,0,140))
+        self.color_paused.fill((0,0,0,100))
+
+        self.color_paused_opts = pg.Surface(self.screen.get_size()).convert_alpha()
+        self.color_paused_opts.fill((0,0,0,0))
 
         self.fleche_up = pg.image.load(path.join(img_folder, FLECHE_UP)).convert_alpha()
         self.fleche_up = pg.transform.scale(self.fleche_up , (TAILLE_ECRIT_NORMAL,TAILLE_ECRIT_NORMAL))
@@ -145,6 +148,7 @@ class Game():
         self.bodies_ai = pg.sprite.Group()
 
         self.COOLDOWN_SPAWN_BONBON = COOLDOWN_SPAWN_BONBON
+        self.COOLDOWN_SPAWN_AI = COOLDOWN_SPAWN_AI
 
         self.last_time_candy = time()
         self.last_time_serpent = time()
@@ -160,8 +164,10 @@ class Game():
         self.raccpause = False
         self.musique_fond = True
         self.sond_ambiant= True
-        self.rejouer = False
-
+        self.option_bb = False
+        self.option_ai = False
+        self.pourcent_cd_bonbon = 0
+        self.pourcent_cd_ai = 0
         pg.mixer.music.load(path.join(self.sound_folder, CODE_MUSIC))
         pg.mixer.music.set_volume(0.03)
 
@@ -219,7 +225,7 @@ class Game():
     def draw(self):
         # GAMELOOP -- DRAW
         pg.display.set_caption("{:0.2f}".format(self.clock.get_fps()))
-        self.screen.fill(BROWN)
+        self.screen.fill(BGCOLOR)
         for sprite in self.all_sprites:
             self.screen.blit(sprite.image, self.camera.apply(sprite))
 
@@ -227,8 +233,6 @@ class Game():
         score2=':'+str(self.player.snake_longueur)
         self.draw_text(score, self.fontJP, 40, WHITE ,10,10, align="Nord_Ouest")
         self.draw_text(score2, self.fontCelte, 40, WHITE ,70,10, align="Nord_Ouest")
-
-
 
         if self.pause :
             if self.option_pause:
@@ -285,9 +289,8 @@ class Game():
         self.screen.fill(BGCOLOR)
         self.draw_text("Sliter IO ",self.fontJP, TAILLE_ECRIT_GRAND, WHITE, WIDTH/2, HEIGHT/4, align="Middle")
         self.draw_text("O  pour  acceder  aux  Options",self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+105, HEIGHT/2, align="Middle")
-        self.draw_text("I  pour  voir  l Introduction",self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+93, HEIGHT/2+100, align="Middle")
-        self.draw_text("R  pour  acceder  aux  Raccourcis", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+120 ,HEIGHT / 2 + 200, align="Middle")
-        self.draw_text("ESPACE  pour  commencer  la  partie",self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+175, HEIGHT/2+300, align="Middle")
+        self.draw_text("R  pour  acceder  aux  Raccourcis", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+120 ,HEIGHT / 2 + 100, align="Middle")
+        self.draw_text("ESPACE  pour  commencer  la  partie",self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+175, HEIGHT/2+200, align="Middle")
         pg.display.flip()
         self.waiting_start_screens()
 
@@ -320,10 +323,24 @@ class Game():
             self.draw_text("Game Paused", self.fontJP, 105, RED, WIDTH / 2, WIDTH / 20, align="Middle")
         else :
             self.screen.fill(BGCOLOR)
+            self.draw_text("B  pour  acceder  aux options des bonbons  ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE,
+                           WIDTH / 4 + 240, HEIGHT / 2 + 200, align="Middle")
+            self.draw_text("I  pour  acceder  aux options des IA  ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE,
+                           WIDTH / 4 + 170, HEIGHT / 2 + 300, align="Middle")
         self.draw_text("Sliter IO ",self.fontJP, TAILLE_ECRIT_GRAND, WHITE, WIDTH/2, HEIGHT/4, align="Middle")
         self.draw_text("M  pour  activer  desactiver   la   musique  de  fond ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+325, HEIGHT/2, align="Middle")
-        self.draw_text("S  pour  activer  desactiver   les   sonds  ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+200, HEIGHT /2+100, align="Middle")
-        self.draw_text("Echap pour revenir en arriere ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+115,HEIGHT / 2 + 200, align="Middle")
+        self.draw_text("S  pour  activer  desactiver   les   sons  ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+200, HEIGHT /2+100, align="Middle")
+
+        self.draw_text("Echap pour revenir en arriere ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+115, HEIGHT/2+400, align="Middle")
+
+        if self.musique_fond:
+            self.draw_text("ON ", self.fontJP, TAILLE_ECRIT_NORMAL,WHITE, WIDTH-300 , HEIGHT / 2, align="Middle")
+        else :
+            self.draw_text("OFF", self.fontJP, TAILLE_ECRIT_NORMAL,WHITE, WIDTH -300 , HEIGHT / 2, align="Middle")
+        if self.sond_ambiant:
+            self.draw_text("ON ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH-300, HEIGHT/2 +100, align="Middle")
+        else:
+            self.draw_text("OFF", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH-300, HEIGHT/2+100, align="Middle")
         pg.display.flip()
         self.waiting_option_screens()
         if viapause:
@@ -337,22 +354,217 @@ class Game():
         while waiting:
             self.clock.tick(FPS)
             for event in pg.event.get():
-                print(self.musique_fond, self.sond_ambiant)
                 if event.type == pg.QUIT:
                     waiting = False
+
                 if event.type == pg.KEYDOWN:
                     if event.key == pg.K_ESCAPE and not self.option_pause:
                         waiting = False
                     elif event.key == pg.K_ESCAPE and  self.option_pause:
                         self.option_pause = not self.option_pause
                         waiting = False
-                    elif event.key == pg.K_SEMICOLON:
+
+
+                    elif event.key == pg.K_SEMICOLON and not self.option_pause:
+                        self.screen.fill(BGCOLOR)
                         self.musique_fond = not self.musique_fond
+                        self.draw_text("Sliter IO ", self.fontJP, TAILLE_ECRIT_GRAND, WHITE, WIDTH / 2, HEIGHT / 4,align="Middle")
+                        self.draw_text("M  pour  activer  desactiver   la   musique  de  fond ", self.fontJP,TAILLE_ECRIT_NORMAL, WHITE, WIDTH / 4 + 325, HEIGHT / 2, align="Middle")
+                        self.draw_text("S  pour  activer  desactiver   les   sons  ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH / 4 + 200, HEIGHT / 2 + 100, align="Middle")
+                        self.draw_text("B  pour  acceder  aux options des bonbons  ", self.fontJP, TAILLE_ECRIT_NORMAL,WHITE, WIDTH / 4 + 240, HEIGHT / 2 + 200, align="Middle")
+                        self.draw_text("I  pour  acceder  aux options des IA  ", self.fontJP, TAILLE_ECRIT_NORMAL,WHITE, WIDTH / 4 + 170, HEIGHT / 2 + 300, align="Middle")
+                        self.draw_text("Echap pour revenir en arriere ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE,WIDTH / 4 + 115, HEIGHT / 2 + 400, align="Middle")
+                        if self.musique_fond:
+                            self.draw_text("ON ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH - 300, HEIGHT / 2,align="Middle")
+                        else:
+                            self.draw_text("OFF", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH - 400, HEIGHT / 2, align="Middle")
+                        if self.sond_ambiant:
+                            self.draw_text("ON ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH - 300,HEIGHT / 2 + 100, align="Middle")
+                        else:
+                            self.draw_text("OFF", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH - 400,HEIGHT / 2 + 100, align="Middle")
+                        pg.display.flip()
+
                     elif event.key == pg.K_SEMICOLON and self.option_pause:
+                        self.screen.blit(self.color_paused, (0, 0))
+                        self.draw_text("Game Paused", self.fontJP, 105, RED, WIDTH / 2, WIDTH / 20, align="Middle")
+                        self.draw_text("Sliter IO ", self.fontJP, TAILLE_ECRIT_GRAND, WHITE, WIDTH / 2, HEIGHT / 4,
+                                       align="Middle")
                         pg.mixer.music.stop()
                         self.musique_fond = not self.musique_fond
-                    elif event.key == pg.K_s:
+
+                        self.draw_text("Sliter IO ", self.fontJP, TAILLE_ECRIT_GRAND, WHITE, WIDTH / 2, HEIGHT / 4,align="Middle")
+                        self.draw_text("M  pour  activer  desactiver   la   musique  de  fond ", self.fontJP,TAILLE_ECRIT_NORMAL, WHITE, WIDTH / 4 + 325, HEIGHT / 2, align="Middle")
+                        self.draw_text("S  pour  activer  desactiver   les   sons  ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH / 4 + 200, HEIGHT / 2 + 100, align="Middle")
+                        self.draw_text("Echap pour revenir en arriere ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE,WIDTH / 4 + 115, HEIGHT / 2 + 400, align="Middle")
+                        if self.musique_fond:
+                            self.draw_text("ON ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH - 300, HEIGHT / 2,align="Middle")
+                        else:
+                            self.draw_text("OFF", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH - 400, HEIGHT / 2, align="Middle")
+                        if self.sond_ambiant:
+                            self.draw_text("ON ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH - 300,HEIGHT / 2 + 100, align="Middle")
+                        else:
+                            self.draw_text("OFF", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH - 400,HEIGHT / 2 + 100, align="Middle")
+                        pg.display.flip()
+
+
+                    elif event.key == pg.K_s and not self.option_pause:
+                        self.screen.fill(BGCOLOR)
                         self.sond_ambiant = not self.sond_ambiant
+                        self.draw_text("Sliter IO ", self.fontJP, TAILLE_ECRIT_GRAND, WHITE, WIDTH / 2, HEIGHT / 4,align="Middle")
+                        self.draw_text("M  pour  activer  desactiver   la   musique  de  fond ", self.fontJP,TAILLE_ECRIT_NORMAL, WHITE, WIDTH / 4 + 325, HEIGHT / 2, align="Middle")
+                        self.draw_text("S  pour  activer  desactiver   les   sons  ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH / 4 + 200, HEIGHT / 2 + 100, align="Middle")
+                        self.draw_text("B  pour  acceder  aux options des bonbons  ", self.fontJP, TAILLE_ECRIT_NORMAL,WHITE, WIDTH / 4 + 240, HEIGHT / 2 + 200, align="Middle")
+                        self.draw_text("I  pour  acceder  aux options des IA  ", self.fontJP, TAILLE_ECRIT_NORMAL,WHITE, WIDTH / 4 + 170, HEIGHT / 2 + 300, align="Middle")
+                        self.draw_text("Echap pour revenir en arriere ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE,WIDTH / 4 + 115, HEIGHT / 2 + 400, align="Middle")
+                        if self.musique_fond:
+                            self.draw_text("ON ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH - 300, HEIGHT / 2,align="Middle")
+                        else:
+                            self.draw_text("OFF", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH - 400, HEIGHT / 2, align="Middle")
+                        if self.sond_ambiant:
+                            self.draw_text("ON ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH - 300,HEIGHT / 2 + 100, align="Middle")
+                        else:
+                            self.draw_text("OFF", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH - 400,HEIGHT / 2 + 100, align="Middle")
+                        pg.display.flip()
+                    elif event.key == pg.K_s and self.option_pause:
+                        self.sond_ambiant = not self.sond_ambiant
+                        self.screen.blit(self.color_paused, (0, 0))
+                        self.draw_text("Game Paused", self.fontJP, 105, RED, WIDTH / 2, WIDTH / 20, align="Middle")
+                        self.draw_text("Sliter IO ", self.fontJP, TAILLE_ECRIT_GRAND, WHITE, WIDTH / 2, HEIGHT / 4,
+                                       align="Middle")
+                        self.draw_text("Sliter IO ", self.fontJP, TAILLE_ECRIT_GRAND, WHITE, WIDTH / 2, HEIGHT / 4,align="Middle")
+                        self.draw_text("M  pour  activer  desactiver   la   musique  de  fond ", self.fontJP,TAILLE_ECRIT_NORMAL, WHITE, WIDTH / 4 + 325, HEIGHT / 2, align="Middle")
+                        self.draw_text("S  pour  activer  desactiver   les   sons  ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH / 4 + 200, HEIGHT / 2 + 100, align="Middle")
+                        self.draw_text("Echap pour revenir en arriere ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE,WIDTH / 4 + 115, HEIGHT / 2 + 400, align="Middle")
+                        if self.musique_fond:
+                            self.draw_text("ON ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH - 300, HEIGHT / 2,align="Middle")
+                        else:
+                            self.draw_text("OFF", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH - 400, HEIGHT / 2, align="Middle")
+                        if self.sond_ambiant:
+                            self.draw_text("ON ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH - 300,HEIGHT / 2 + 100, align="Middle")
+                        else:
+                            self.draw_text("OFF", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH - 400,HEIGHT / 2 + 100, align="Middle")
+                        pg.display.flip()
+                    elif event.key == pg.K_b and not self.option_pause:
+                        self.option_bb_screen()
+                        waiting = False
+
+                    elif event.key == pg.K_i and not self.option_pause:
+                        self.option_ai_screen()
+                        waiting=False
+
+    def option_bb_screen(self):
+        self.screen.fill(BGCOLOR)
+        print(2)
+        self.draw_text("P  pour  avoir  plus  de  bonbons ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+134, HEIGHT/2, align="Middle")
+        self.draw_text("M  pour  avoir  moins  de  bonbons  ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+155, HEIGHT /2+100, align="Middle")
+        self.draw_text("Echap pour revenir en arriere ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+115, HEIGHT/2+200, align="Middle")
+        pourc = str(self.pourcent_cd_bonbon)
+        self.draw_text(pourc, self.fontCelte, TAILLE_ECRIT_NORMAL, WHITE, WIDTH / 2 + 500, HEIGHT / 2, align="Middle")
+        self.draw_text("%", self.fontCelte, TAILLE_ECRIT_NORMAL, WHITE, WIDTH / 2 + 650, HEIGHT / 2, align="Middle")
+        pg.display.flip()
+        self.waiting_option_bb_screens()
+        self.option_screen(False)
+
+    def waiting_option_bb_screens(self):
+        waiting = True
+
+        while waiting:
+            self.clock.tick(FPS)
+            for event in pg.event.get():
+                if event.type == pg.QUIT:
+                    waiting = False
+
+                if event.type == pg.KEYDOWN:
+                    if event.key == pg.K_ESCAPE :
+                        waiting = False
+
+                    elif event.key == pg.K_p   :
+                        self.screen.fill(BGCOLOR)
+                        self.draw_text("P  pour  avoir  plus  de  bonbons ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE,WIDTH / 4 + 134, HEIGHT / 2, align="Middle")
+                        self.draw_text("M  pour  avoir  moins  de  bonbons  ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE,WIDTH / 4 + 155, HEIGHT / 2 + 100, align="Middle")
+                        self.draw_text("Echap pour revenir en arriere ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE,WIDTH / 4 + 115, HEIGHT / 2 + 200, align="Middle")
+
+                        self.pourcent_cd_bonbon +=10
+                        self.COOLDOWN_SPAWN_BONBON -= self.COOLDOWN_SPAWN_BONBON * 0.1
+                        pourc = str(self.pourcent_cd_bonbon)
+                        self.draw_text(pourc, self.fontCelte, TAILLE_ECRIT_NORMAL, WHITE, WIDTH / 2 + 500, HEIGHT / 2,align="Middle")
+                        self.draw_text("%", self.fontCelte, TAILLE_ECRIT_NORMAL, WHITE, WIDTH / 2 + 650, HEIGHT / 2,align="Middle")
+
+                        pg.display.flip()
+
+                    elif event.key == pg.K_SEMICOLON:
+                        self.screen.fill(BGCOLOR)
+                        self.draw_text("P  pour  avoir  plus  de  bonbons ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE,WIDTH / 4 + 134, HEIGHT / 2, align="Middle")
+                        self.draw_text("M  pour  avoir  moins  de  bonbons  ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE,WIDTH / 4 + 155, HEIGHT / 2 + 100, align="Middle")
+                        self.draw_text("Echap pour revenir en arriere ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE,WIDTH / 4 + 115, HEIGHT / 2 + 200, align="Middle")
+
+                        self.pourcent_cd_bonbon -= 10
+                        self.COOLDOWN_SPAWN_BONBON += self.COOLDOWN_SPAWN_BONBON * 0.1
+                        pourc = str(self.pourcent_cd_bonbon)
+                        self.draw_text(pourc, self.fontCelte, TAILLE_ECRIT_NORMAL, WHITE, WIDTH / 2 + 500, HEIGHT / 2,align="Middle")
+                        self.draw_text("%", self.fontCelte, TAILLE_ECRIT_NORMAL, WHITE, WIDTH / 2 + 650, HEIGHT / 2,align="Middle")
+
+                        pg.display.flip()
+
+
+
+    def option_ai_screen(self):
+        self.screen.fill(BGCOLOR)
+        self.draw_text("Sliter IO ",self.fontJP, TAILLE_ECRIT_GRAND, WHITE, WIDTH/2, HEIGHT/4, align="Middle")
+        self.draw_text("P  pour  avoir  plus  de  serpents ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+137, HEIGHT/2, align="Middle")
+        self.draw_text("M  pour  avoir  moins  de  serpents  ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+157, HEIGHT /2+100, align="Middle")
+        self.draw_text("Echap pour revenir en arriere ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+115, HEIGHT/2+200, align="Middle")
+        pourc = str(self.pourcent_cd_ai)
+        self.draw_text(pourc, self.fontCelte, TAILLE_ECRIT_NORMAL, WHITE, WIDTH / 2 + 500, HEIGHT / 2, align="Middle")
+        self.draw_text("%", self.fontCelte, TAILLE_ECRIT_NORMAL, WHITE, WIDTH / 2 + 650, HEIGHT / 2, align="Middle")
+        pg.display.flip()
+        self.waiting_option_ai_screens()
+        self.option_screen(False)
+
+    def waiting_option_ai_screens(self):
+        waiting = True
+
+        while waiting:
+            self.clock.tick(FPS)
+            for event in pg.event.get():
+                if event.type == pg.QUIT:
+                    waiting = False
+
+                if event.type == pg.KEYDOWN:
+                    if event.key == pg.K_ESCAPE :
+                        waiting = False
+
+                    elif event.key == pg.K_p   :
+                        self.screen.fill(BGCOLOR)
+                        self.draw_text("Sliter IO ", self.fontJP, TAILLE_ECRIT_GRAND, WHITE, WIDTH / 2, HEIGHT / 4,align="Middle")
+
+                        self.draw_text("P  pour  avoir  plus  de  serpents ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE,WIDTH / 4 + 137, HEIGHT / 2, align="Middle")
+                        self.draw_text("M  pour  avoir  moins  de  serpents  ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE,WIDTH / 4 + 157, HEIGHT / 2 + 100, align="Middle")
+                        self.draw_text("Echap pour revenir en arriere ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH / 4 + 115, HEIGHT / 2 + 200, align="Middle")
+
+                        self.pourcent_cd_ai +=10
+                        self.COOLDOWN_SPAWN_AI -= self.COOLDOWN_SPAWN_AI * 0.1
+                        pourc = str(self.pourcent_cd_ai)
+                        self.draw_text(pourc, self.fontCelte, TAILLE_ECRIT_NORMAL, WHITE, WIDTH / 2 + 500, HEIGHT / 2,align="Middle")
+                        self.draw_text("%", self.fontCelte, TAILLE_ECRIT_NORMAL, WHITE, WIDTH / 2 + 650, HEIGHT / 2,align="Middle")
+
+                        pg.display.flip()
+
+                    elif event.key == pg.K_SEMICOLON:
+                        self.screen.fill(BGCOLOR)
+                        self.draw_text("Sliter IO ", self.fontJP, TAILLE_ECRIT_GRAND, WHITE, WIDTH / 2, HEIGHT / 4,align="Middle")
+
+                        self.draw_text("P  pour  avoir  plus  de  serpents ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE,WIDTH / 4 + 137, HEIGHT / 2, align="Middle")
+                        self.draw_text("M  pour  avoir  moins  de  serpents  ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE,WIDTH / 4 + 157 , HEIGHT / 2 + 100, align="Middle")
+                        self.draw_text("Echap pour revenir en arriere ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE,WIDTH / 4 + 115, HEIGHT / 2 + 200, align="Middle")
+
+                        self.pourcent_cd_ai -= 10
+                        self.COOLDOWN_SPAWN_AI += self.COOLDOWN_SPAWN_AI * 0.1
+                        pourc = str(self.pourcent_cd_ai)
+                        self.draw_text(pourc, self.fontCelte, TAILLE_ECRIT_NORMAL, WHITE, WIDTH / 2 + 500, HEIGHT / 2,align="Middle")
+                        self.draw_text("%", self.fontCelte, TAILLE_ECRIT_NORMAL, WHITE, WIDTH / 2 + 650, HEIGHT / 2,align="Middle")
+
+                        pg.display.flip()
 
     def raccourcis_screen(self, viapause):
         if viapause :
@@ -390,6 +602,7 @@ class Game():
 
         self.draw_text("D ou", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4-150, HEIGHT/2+200, align="Middle")
         self.draw_text("pour tourner vers la droite", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/3+195, HEIGHT/2+200, align="Middle")
+        self.draw_text("Echap pour revenir en arriere ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+115, HEIGHT/2+300, align="Middle")
 
         pg.display.flip()
         self.waiting_racc_screens()
