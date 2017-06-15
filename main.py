@@ -660,6 +660,8 @@ class Game():
                     self.playing = False
                     self.running = False
                 elif event.key == pg.K_RETURN:
+                    pg.mixer.music.pause()
+                    pg.mixer.pause()
                     self.candies.empty()
                     self.bodies.empty()
                     self.snakeAIs.empty()
