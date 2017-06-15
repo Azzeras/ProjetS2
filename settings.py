@@ -27,8 +27,9 @@ BLACK =(0,0,0)
 RED =(255,0,0)
 GREEN =(0,255,0)
 BLUE =(0,0,255)
-BROWN = (88,41,0)
+BROWN = (87,41,14)
 
+BGCOLOR = BROWN
 #BONBONS
 CANDY1_IMG = 'Candy1.png'
 CANDY2_IMG = 'Candy2.png'
@@ -65,15 +66,18 @@ GAME_OVER_SOUND = ['Noooo.wav','Motus_Boule_Noir.wav','Illidan.wav','Jack.wav','
 KILL_AI_SNAKE_SOUND = ['MLG.wav','Headshot.wav','Combo_Breaker.wav','Demacia.wav','Il_Est_Fort.wav','Julien_Lepers.wav','Leroyyyyyyyy.wav','Quickshot.wav','Pentakill.wav']
 
 
+#  OPTION MENUES DIVERS ET VARIES
 
+TAILLE_ECRIT_NORMAL = 100
+TAILLE_ECRIT_GRAND = 250
 
+FLECHE_UP  = 'Fleche_UP.jpg'
+FLECHE_DROITE = 'Fleche_Droite.png'
+FLECHE_GAUCHE = 'Fleche_Gauche.png'
 
-
-
-
-
-"""
-"""
+FLECHE_UP_PAUSED  = 'Fleche_UP_Paused.png'
+FLECHE_DROITE_PAUSED = 'Fleche_Droite_Paused.png'
+FLECHE_GAUCHE_PAUSED = 'Fleche_Gauche_Paused.png'
 
 
 
