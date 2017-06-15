@@ -17,9 +17,7 @@ class Game():
         self.clock = pg.time.Clock()
         self.load_data()
         self.running = True
-        self.last_time_candy = time()
-        self.last_time_serpent = time()
-        self.candy_List =[]
+
 
     def draw_text(self, text, font_name, size, color, x, y, align="Nord_Ouest"):
         f = open(font_name,'r')
@@ -52,7 +50,7 @@ class Game():
         self.sound_folder = path.join(game_folder, 'Sounds')
 
         self.fontJP = path.join(img_folder, 'Jurassic_Park.TTF')
-
+        self.fontCelte = path.join(img_folder, 'SEVESBRG.TTF')
         self.color_paused = pg.Surface(self.screen.get_size()).convert_alpha()
         self.color_paused.fill((0,0,0,140))
 
@@ -146,14 +144,23 @@ class Game():
         self.snakeAIs = pg.sprite.Group()
         self.bodies_ai = pg.sprite.Group()
 
+        self.COOLDOWN_SPAWN_BONBON = COOLDOWN_SPAWN_BONBON
+
+        self.last_time_candy = time()
+        self.last_time_serpent = time()
+        self.candy_List =[]
+        self.nb_ai_kill = 0
         self.player = Player(self, WIDTH//2, HEIGHT//2)
         self.all_sprites.add(self.player)
         self.camera = Camera(WIDTH, HEIGHT)
+
         self.pause = False
+        self.end = False
         self.option_pause = False
         self.raccpause = False
         self.musique_fond = True
         self.sond_ambiant= True
+        self.rejouer = False
 
         pg.mixer.music.load(path.join(self.sound_folder, CODE_MUSIC))
         pg.mixer.music.set_volume(0.03)
@@ -171,7 +178,7 @@ class Game():
         while self.playing:
             self.clock.tick(FPS)
             self.events()
-            if not self.pause:
+            if not self.pause and not self.end:
                 self.update()
             self.draw()
 
@@ -195,14 +202,14 @@ class Game():
 
         self.candy_tmp = []
         self.candyList_Compteur=-1
-        if time() - self.last_time_candy > COOLDOWN_SPAWN_BONBON and not self.pause:
+        if time() - self.last_time_candy > self.COOLDOWN_SPAWN_BONBON and not self.pause and not self.end:
             self.rand_bonbon_X_Time = random.randrange(int(self.player.pos.x) - int(WIDTH/2),int(self.player.pos.x )+ int(WIDTH/2))
             self.rand_bonbon_Y_Time = random.randrange(int(self.player.pos.y) - int(HEIGHT/2),int(self.player.pos.y )+ int(HEIGHT/2))
             self.last_time_candy = time()
             self.candy_List.append((self.rand_bonbon_X_Time, self.rand_bonbon_Y_Time))
             Candy(self, self.rand_bonbon_X_Time, self.rand_bonbon_Y_Time)
 
-        if time() - self.last_time_serpent > COOLDOWN_SPAWN_AI and not self.pause:
+        if time() - self.last_time_serpent > COOLDOWN_SPAWN_AI and not self.pause and not self.end:
             self.rand_AI_x = random.randrange(int(self.player.pos.x) - int(WIDTH/2),int(self.player.pos.x )+ int(WIDTH/2))
             self.rand_AI_y = random.randrange(int(self.player.pos.y) - int(HEIGHT/2),int(self.player.pos.y )+ int(HEIGHT/2))
             self.last_time_serpent = time()
@@ -215,10 +222,13 @@ class Game():
         self.screen.fill(BROWN)
         for sprite in self.all_sprites:
             self.screen.blit(sprite.image, self.camera.apply(sprite))
+
         score = "Score "
         score2=':'+str(self.player.snake_longueur)
-        self.draw_text(score, self.fontJP, 40, BLACK ,10,10, align="Nord_Ouest")
-        self.draw_text(score2, self.fontJP, 40, BLACK ,70,10, align="Nord_Ouest")
+        self.draw_text(score, self.fontJP, 40, WHITE ,10,10, align="Nord_Ouest")
+        self.draw_text(score2, self.fontCelte, 40, WHITE ,70,10, align="Nord_Ouest")
+
+
 
         if self.pause :
             if self.option_pause:
@@ -226,15 +236,20 @@ class Game():
             elif self.raccpause :
                 self.raccourcis_screen(True)
             self.pause_screen()
+        if self.end :
+            self.end_screen()
+
         pg.display.flip()
 
     def pause_screen(self):
         self.screen.blit(self.color_paused, (0, 0))
         self.draw_text("Game Paused", self.fontJP, 105, RED, WIDTH / 2, WIDTH / 20, align="Middle")
         self.draw_text("Sliter IO ",self.fontJP, TAILLE_ECRIT_GRAND, WHITE, WIDTH/2, HEIGHT/4, align="Middle")
-        self.draw_text("Press   O   for   Options",self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+55, HEIGHT/2, align="Middle")
-        self.draw_text("Press  R  pour  acceder  aux  Raccourcis", self.fontJP,TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+200, HEIGHT/2+100, align="Middle")
-        self.draw_text("Press  ENTREE  pour  REcommencer  une  partie",self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+310, HEIGHT/2+200, align="Middle")
+        self.draw_text("O   pour acceder aux   Options",self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+105, HEIGHT/2, align="Middle")
+        self.draw_text("R  pour  acceder  aux  Raccourcis", self.fontJP,TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+120, HEIGHT/2+100, align="Middle")
+        self.draw_text("ENTREE  pour  REcommencer  une  partie",self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+230, HEIGHT/2+200, align="Middle")
+        self.draw_text("Q  pour  quiiter  le  jeu ",self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+45, HEIGHT/2+300, align="Middle")
+
         self.keys_pause_screen()
 
     def keys_pause_screen(self):
@@ -250,16 +265,29 @@ class Game():
                     self.raccpause = True
                 elif event.key == pg.K_ESCAPE:
                     self.pause = not self.pause
+                elif event.key == pg.K_a:
+                    self.pause = not self.pause
+                    print(self.end)
+                    self.end = not self.end
+                    print(1,self.end)
+
+                elif event.key == pg.K_RETURN:
+                    self.candies.empty()
+                    self.bodies.empty()
+                    self.snakeAIs.empty()
+                    self.bodies_ai.empty()
+                    self.all_sprites.empty()
+                    self.new()
 
 
     def start_screen(self):
         # AFFICHE ECRAN DE DEBUT
         self.screen.fill(BGCOLOR)
         self.draw_text("Sliter IO ",self.fontJP, TAILLE_ECRIT_GRAND, WHITE, WIDTH/2, HEIGHT/4, align="Middle")
-        self.draw_text("Press   O   for   Options",self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+55, HEIGHT/2, align="Middle")
-        self.draw_text("Press   I   for   l Introduction",self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+119, HEIGHT/2+100, align="Middle")
-        self.draw_text("Press  R  pour  acceder  aux  Raccourcis", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+200 ,HEIGHT / 2 + 200, align="Middle")
-        self.draw_text("Press  ESPACE  pour  commencer  la  partie",self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+TAILLE_ECRIT_GRAND, HEIGHT/2+300, align="Middle")
+        self.draw_text("O  pour  acceder  aux  Options",self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+105, HEIGHT/2, align="Middle")
+        self.draw_text("I  pour  voir  l Introduction",self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+93, HEIGHT/2+100, align="Middle")
+        self.draw_text("R  pour  acceder  aux  Raccourcis", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+120 ,HEIGHT / 2 + 200, align="Middle")
+        self.draw_text("ESPACE  pour  commencer  la  partie",self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+175, HEIGHT/2+300, align="Middle")
         pg.display.flip()
         self.waiting_start_screens()
 
@@ -293,9 +321,9 @@ class Game():
         else :
             self.screen.fill(BGCOLOR)
         self.draw_text("Sliter IO ",self.fontJP, TAILLE_ECRIT_GRAND, WHITE, WIDTH/2, HEIGHT/4, align="Middle")
-        self.draw_text("Press  M  pour  activer  desactiver   la   musique  de  fond ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+325, HEIGHT/2, align="Middle")
-        self.draw_text("Press  S  pour  activer  desactiver   les   sonds  ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+200, HEIGHT /2+100, align="Middle")
-        self.draw_text("Press  Echap pour revenir en arriere ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+115,HEIGHT / 2 + 200, align="Middle")
+        self.draw_text("M  pour  activer  desactiver   la   musique  de  fond ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+325, HEIGHT/2, align="Middle")
+        self.draw_text("S  pour  activer  desactiver   les   sonds  ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+200, HEIGHT /2+100, align="Middle")
+        self.draw_text("Echap pour revenir en arriere ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+115,HEIGHT / 2 + 200, align="Middle")
         pg.display.flip()
         self.waiting_option_screens()
         if viapause:
@@ -332,35 +360,35 @@ class Game():
             self.draw_text("Game Paused", self.fontJP, 105, RED, WIDTH / 2, WIDTH / 20, align="Middle")
 
             self.image1 = self.fleche_up_paused
-            self.screen.blit(self.image1, (WIDTH / 4 - 65, HEIGHT / 2 - 75))
+            self.screen.blit(self.image1, (WIDTH / 4 - 85, HEIGHT / 2 - 75))
 
             self.image2 = self.fleche_gauche_paused
-            self.screen.blit(self.image2, (WIDTH / 4 - 65, HEIGHT / 2 + 35))
+            self.screen.blit(self.image2, (WIDTH / 4 - 85, HEIGHT / 2 + 35))
 
             self.image3 = self.fleche_droite_paused
-            self.screen.blit(self.image3, (WIDTH / 4 - 65, HEIGHT / 2 + 135))
+            self.screen.blit(self.image3, (WIDTH / 4 - 85, HEIGHT / 2 + 135))
 
         else :
             self.screen.fill(BGCOLOR)
 
             self.image1 = self.fleche_up
-            self.screen.blit(self.image1, (WIDTH / 4 - 65, HEIGHT / 2 - 75))
+            self.screen.blit(self.image1, (WIDTH / 4 - 85, HEIGHT / 2 - 75))
 
             self.image2 = self.fleche_gauche
-            self.screen.blit(self.image2, (WIDTH / 4 - 65, HEIGHT / 2 + 35))
+            self.screen.blit(self.image2, (WIDTH / 4 - 85, HEIGHT / 2 + 35))
 
             self.image3 = self.fleche_droite
-            self.screen.blit(self.image3, (WIDTH / 4 - 65, HEIGHT / 2 + 135))
+            self.screen.blit(self.image3, (WIDTH / 4 - 85, HEIGHT / 2 + 135))
 
         self.draw_text("Sliter IO ",self.fontJP, TAILLE_ECRIT_GRAND, WHITE, WIDTH/2, HEIGHT/4, align="Middle")
 
-        self.draw_text("Z ou", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4-125, HEIGHT/2, align="Middle")
-        self.draw_text("pour avancer", self.fontJP,TAILLE_ECRIT_NORMAL, WHITE, WIDTH/3+35, HEIGHT/2, align="Middle")
+        self.draw_text("Z ou", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4-150, HEIGHT/2, align="Middle")
+        self.draw_text("pour avancer", self.fontJP,TAILLE_ECRIT_NORMAL, WHITE, WIDTH/3+5, HEIGHT/2, align="Middle")
 
-        self.draw_text("Q ou", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4-125, HEIGHT/2+100, align="Middle")
+        self.draw_text("Q ou", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4-150, HEIGHT/2+100, align="Middle")
         self.draw_text("pour tourner vers la gauche ", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/3+200, HEIGHT/2+100, align="Middle")
 
-        self.draw_text("D ou", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4-125, HEIGHT/2+200, align="Middle")
+        self.draw_text("D ou", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4-150, HEIGHT/2+200, align="Middle")
         self.draw_text("pour tourner vers la droite", self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/3+195, HEIGHT/2+200, align="Middle")
 
         pg.display.flip()
@@ -388,12 +416,48 @@ class Game():
         pass
 
     def end_screen(self):
-        # AFFICHE ECRAN DE FIN
-        pass
+        self.screen.blit(self.color_paused, (0, 0))
+        self.draw_text("GAME OVER", self.fontJP, 105, RED, WIDTH / 2, WIDTH / 20, align="Middle")
+        self.draw_text("Sliter IO ",self.fontJP, TAILLE_ECRIT_GRAND, WHITE, WIDTH/2, HEIGHT/4, align="Middle")
+
+        self.draw_text("Vous avez un score final de ",self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+95, HEIGHT/2, align="Middle")
+        score = str(self.player.snake_longueur)
+        self.draw_text(score,self.fontCelte, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/2+20, HEIGHT/2, align="Middle")
+
+        self.draw_text("Vous avez elimine  ",self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4, HEIGHT/2+100, align="Middle")
+        elimine = str (self.nb_ai_kill)
+        self.draw_text(elimine,self.fontCelte, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/3+200, HEIGHT/2+100, align="Middle")
+        self.draw_text("Snakes  ",self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/3+350, HEIGHT/2+100, align="Middle")
+
+        self.draw_text("ENTREE  pour  REcommencer  une  partie",self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+230, HEIGHT/2+200, align="Middle")
+        self.draw_text("Q  pour  quiiter  le  jeu ",self.fontJP, TAILLE_ECRIT_NORMAL, WHITE, WIDTH/4+45, HEIGHT/2+300, align="Middle")
+        self.keys_end_screen()
+
+    def keys_end_screen(self):
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                waiting = False
+                self.playing = False
+                self.running = False
+            if event.type == pg.KEYDOWN:
+                if event.key == pg.K_ESCAPE:
+                    self.pause = not self.pause
+                elif event.key == pg.K_a:
+                    waiting = False
+                    self.playing = False
+                    self.running = False
+                elif event.key == pg.K_RETURN:
+                    self.candies.empty()
+                    self.bodies.empty()
+                    self.snakeAIs.empty()
+                    self.bodies_ai.empty()
+                    self.all_sprites.empty()
+                    self.new()
+
 
 g = Game()
 while g.running:
     g.new()
-    g.end_screen()
+
 
 pg.quit()
