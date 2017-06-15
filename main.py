@@ -168,7 +168,7 @@ class Game():
         self.option_ai = False
         self.pourcent_cd_bonbon = 0
         self.pourcent_cd_ai = 0
-        pg.mixer.music.load(path.join(self.sound_folder, CODE_MUSIC))
+        pg.mixer.music.load(path.join(self.sound_folder, TITANIC))
         pg.mixer.music.set_volume(0.03)
 
 
