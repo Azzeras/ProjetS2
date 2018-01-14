@@ -48,6 +48,7 @@ class Game():
         game_folder = path.dirname(__file__)
         img_folder = path.join(game_folder, 'Images')
         self.sound_folder = path.join(game_folder, 'Sounds')
+        print("game :",game_folder,"Sound :",self.sound_folder,"Img :",img_folder)
 
         self.fontJP = path.join(img_folder, 'Jurassic_Park.TTF')
         self.fontCelte = path.join(img_folder, 'SEVESBRG.TTF')
